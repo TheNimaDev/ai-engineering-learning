@@ -23,6 +23,8 @@ class ChatBot:
             }
         ]
 
+        self.total_tokens = 0
+
     def bot(self, message):
         self.messages.append({"role": "user", "content": message})
 
@@ -32,6 +34,8 @@ class ChatBot:
             temperature=0.7,
             max_tokens=100,
         )
+
+        self.total_tokens += response.usage.total_tokens
 
         response_content = response.choices[0].message.content
         self.messages.append(
@@ -52,10 +56,16 @@ class ChatBot:
             bot_answer = self.bot(user_input)
             print(bot_answer)
 
+    def report(self):
+        for message in self.messages:
+            print(message)
+        print(f"Consume tokens: {self.total_tokens}")
+
 
 def main():
     bot = ChatBot()
     bot.chat()
+    bot.report()
 
 
 if __name__ == "__main__":
