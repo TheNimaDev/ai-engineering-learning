@@ -4,6 +4,8 @@ from openai import OpenAI
 
 load_dotenv()
 
+messages = []
+
 LLM = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url='https://api.groq.com/openai/v1'
@@ -11,16 +13,20 @@ LLM = OpenAI(
 
 
 def bot(message):
+    messages.append({"role": "user", "content": message})
+
     response = LLM.chat.completions.create(
         model=os.getenv("GROQ_MODEL"),
-        messages=[
-            {"role": "user", "content": message}
-        ],
+        messages=messages,
         temperature=0.7,
         max_tokens=100,
     )
 
-    return response.choices[0].message.content
+    response_content = response.choices[0].message.content
+
+    messages.append({"role": "assistant", "content": response_content})
+
+    return response_content
 
 
 def chat():
@@ -39,6 +45,7 @@ def chat():
 
 def main():
     chat()
+    print(messages)
 
 
 if __name__ == "__main__":
