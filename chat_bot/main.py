@@ -4,7 +4,16 @@ from openai import OpenAI
 
 load_dotenv()
 
-messages = []
+messages = [
+    {
+        "role": "system",
+        "content": (
+            "You are a helpful assistant. "
+            "Introduce yourself in your first response. "
+            "Keep your answers short and concise."
+        ),
+    }
+]
 
 LLM = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
