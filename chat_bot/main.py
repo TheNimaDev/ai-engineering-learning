@@ -21,3 +21,25 @@ def bot(message):
     )
 
     return response.choices[0].message.content
+
+
+def chat():
+    while True:
+        user_input = input(
+            "Ask something (type 'q' to terminate): "
+        ).strip()
+
+        if user_input.lower() == "q":
+            print("Good Luck")
+            break
+
+        bot_answer = bot(user_input)
+        print(bot_answer)
+
+
+def main():
+    chat()
+
+
+if __name__ == "__main__":
+    main()
