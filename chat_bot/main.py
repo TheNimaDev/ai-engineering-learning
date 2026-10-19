@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+from transformers import AutoTokenizer
 
 load_dotenv()
 
@@ -51,6 +52,8 @@ class ChatBot:
         return response_content
 
     def chat(self):
+        encoding = AutoTokenizer.from_pretrained(os.getenv("GROQ_MODEL"))
+
         while True:
             user_input = input(
                 "Ask something (type 'q' to terminate): "
@@ -58,6 +61,14 @@ class ChatBot:
 
             if user_input.lower() == "q":
                 print("Good Luck")
+                break
+
+            token_count = len(encoding.encode(user_input))
+            if token_count > 10:
+                print("Your message is too long. Please try a shorter one.")
+                continue
+            if self.total_tokens > 10_000:
+                print('Unfortunately you exceeded the total token limit for today.')
                 break
 
             bot_answer = self.bot(user_input)
