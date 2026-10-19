@@ -10,6 +10,7 @@ INPUT_PRICE_PER_MILLION = 0.05
 OUTPUT_PRICE_PER_MILLION = 0.08
 TOKEN_LIMIT = 10_000
 INPUT_TOKEN_LIMIT = 10
+SUMMARY_INTERVAL = 5
 
 
 class ChatBot:
@@ -29,10 +30,12 @@ class ChatBot:
         }
 
         self.messages = []
+        self.summary = None
 
         self.total_tokens = 0
         self.input_tokens = 0
         self.output_tokens = 0
+        self.iteration = 0
 
     def track_usage(self, usage):
         if usage is None:
@@ -42,10 +45,70 @@ class ChatBot:
         self.input_tokens += usage.prompt_tokens
         self.output_tokens += usage.completion_tokens
 
+    def summarize_messages(self):
+        if self.iteration % SUMMARY_INTERVAL != 0:
+            return
+
+        messages_to_keep = SUMMARY_INTERVAL
+
+        if len(self.messages) <= messages_to_keep:
+            return
+
+        split_index = len(self.messages) - messages_to_keep
+
+        split_index -= split_index % 2
+
+        if split_index <= 0:
+            return
+
+        early_messages = self.messages[:split_index]
+        recent_messages = self.messages[split_index:]
+
+        summary_input = []
+
+        if self.summary:
+            summary_input.append({
+                "role": "user",
+                "content": f"Previous conversation summary:\n{self.summary}",
+            })
+
+        summary_input.extend(early_messages)
+
+        response = self.llm.chat.completions.create(
+            model=os.getenv("GROQ_MODEL"),
+            temperature=0.5,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Summarize the conversation concisely. "
+                        "Preserve important facts, user preferences, "
+                        "decisions, and context needed for future replies. "
+                        "Incorporate the previous summary if provided."
+                    ),
+                },
+                *summary_input,
+            ],
+        )
+
+        self.track_usage(response.usage)
+        self.summary = response.choices[0].message.content
+
+        self.messages = recent_messages
+
+        print("\n[Conversation summary updated]")
+
     def bot(self, message):
         self.messages.append({"role": "user", "content": message})
 
         request_messages = [self.system_message]
+
+        if self.summary:
+            request_messages.append({
+                "role": "system",
+                "content": f"Summary of earlier conversation:\n{self.summary}",
+            })
+
         request_messages.extend(self.messages)
 
         try:
@@ -76,6 +139,9 @@ class ChatBot:
 
             self.messages.append(
                 {"role": "assistant", "content": response_text})
+
+            self.iteration += 1
+            self.summarize_messages()
 
             return response_text
 
@@ -124,6 +190,12 @@ class ChatBot:
     def report(self):
         print("\n--- Conversation ---")
         print(self.system_message)
+
+        if self.summary:
+            print({
+                "role": "system",
+                "content": f"Earlier conversation summary: {self.summary}",
+            })
 
         for message in self.messages:
             print(message)
