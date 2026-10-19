@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+import time
 from transformers import AutoTokenizer
 
 load_dotenv()
@@ -39,17 +40,29 @@ class ChatBot:
             messages=self.messages,
             temperature=0.7,
             max_tokens=100,
+            stream=True
         )
 
-        self.total_tokens += response.usage.total_tokens
-        self.input_tokens += response.usage.prompt_tokens
-        self.output_tokens += response.usage.completion_tokens
+        response_text = ""
 
-        response_content = response.choices[0].message.content
-        self.messages.append(
-            {"role": "assistant", "content": response_content})
+        for chunk in response:
+            if chunk.choices:
+                delta = chunk.choices[0].delta.content
 
-        return response_content
+                if delta:
+                    print(delta, end="", flush=True)
+                    response_text += delta
+                    time.sleep(0.1)
+
+            if chunk.usage:
+                self.total_tokens += chunk.usage.total_tokens
+                self.input_tokens += chunk.usage.prompt_tokens
+                self.output_tokens += chunk.usage.completion_tokens
+
+        print()
+        self.messages.append({"role": "assistant", "content": response_text})
+
+        return response_text
 
     def chat(self):
         encoding = AutoTokenizer.from_pretrained(os.getenv("GROQ_MODEL"))
@@ -71,8 +84,7 @@ class ChatBot:
                 print('Unfortunately you exceeded the total token limit for today.')
                 break
 
-            bot_answer = self.bot(user_input)
-            print(bot_answer)
+            self.bot(user_input)
 
     def report(self):
         for message in self.messages:
