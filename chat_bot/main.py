@@ -4,6 +4,9 @@ from openai import OpenAI
 
 load_dotenv()
 
+INPUT_PRICE_PER_MILLION = 0.05
+OUTPUT_PRICE_PER_MILLION = 0.08
+
 
 class ChatBot:
     def __init__(self):
@@ -24,6 +27,8 @@ class ChatBot:
         ]
 
         self.total_tokens = 0
+        self.input_tokens = 0
+        self.output_tokens = 0
 
     def bot(self, message):
         self.messages.append({"role": "user", "content": message})
@@ -36,6 +41,8 @@ class ChatBot:
         )
 
         self.total_tokens += response.usage.total_tokens
+        self.input_tokens += response.usage.prompt_tokens
+        self.output_tokens += response.usage.completion_tokens
 
         response_content = response.choices[0].message.content
         self.messages.append(
@@ -59,7 +66,14 @@ class ChatBot:
     def report(self):
         for message in self.messages:
             print(message)
+
+        cost = (
+            self.input_tokens * INPUT_PRICE_PER_MILLION
+            + self.output_tokens * OUTPUT_PRICE_PER_MILLION
+        ) / 1_000_000
+
         print(f"Consume tokens: {self.total_tokens}")
+        print(f"Estimated cost: ${cost:.6f}")
 
 
 def main():
