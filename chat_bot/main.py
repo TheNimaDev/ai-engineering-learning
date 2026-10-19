@@ -116,7 +116,6 @@ class ChatBot:
                 model=os.getenv("GROQ_MODEL"),
                 messages=request_messages,
                 temperature=0.7,
-                max_tokens=100,
                 stream=True,
                 stream_options={"include_usage": True},
             )
@@ -214,6 +213,8 @@ def main():
 
     try:
         bot.chat()
+    except KeyboardInterrupt:
+        print("\n\nChat interrupted by user.")
     finally:
         bot.report()
 
