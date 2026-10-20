@@ -1,11 +1,22 @@
+import os
+from dotenv import load_dotenv
 from pypdf import PdfReader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+
+load_dotenv()
 
 FILE_NAME = ""
 
 
 class Rag:
+    def __init__(self):
+        self.model = HuggingFaceEmbeddings(
+            model_name=os.getenv("HF_MODEL"),
+            encode_kwargs={'normalize_embeddings': True},
+        )
+
     def read_pdf_file(self):
         reader = PdfReader(FILE_NAME)
 
@@ -34,3 +45,10 @@ class Rag:
 
         chunks = text_splitter.split_documents(docs)
         return chunks
+
+    def embed_chunks(self, chunks):
+        chunk_texts = [chunk.page_content for chunk in chunks]
+
+        vectors = self.model.embed_documents(chunk_texts)
+
+        return vectors
