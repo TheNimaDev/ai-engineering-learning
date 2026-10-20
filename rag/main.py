@@ -52,3 +52,30 @@ class Rag:
         vectors = self.model.embed_documents(chunk_texts)
 
         return vectors
+
+    def chat(self):
+        while True:
+            query = input(
+                "Enter some text (type q to terminate): "
+            ).strip()
+
+            if query.lower() == "q":
+                print("Good Luck")
+                break
+
+            if not query:
+                print("Please enter some text.")
+                continue
+
+
+def main():
+    rag = Rag()
+
+    try:
+        rag.chat()
+    except KeyboardInterrupt:
+        print("\n\nChat interrupted by user.")
+
+
+if __name__ == "__main__":
+    main()
