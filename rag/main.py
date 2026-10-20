@@ -4,10 +4,12 @@ from pypdf import PdfReader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+from sentence_transformers import util
+import torch
 
 load_dotenv()
 
-FILE_NAME = ""
+FILE_NAME = "symptoms.pdf"
 
 
 class Rag:
@@ -16,6 +18,9 @@ class Rag:
             model_name=os.getenv("HF_MODEL"),
             encode_kwargs={'normalize_embeddings': True},
         )
+
+        self.chunks = self.splitter(self.read_pdf_file())
+        self.vectors = self.embed_chunks(self.chunks)
 
     def read_pdf_file(self):
         reader = PdfReader(FILE_NAME)
@@ -53,6 +58,23 @@ class Rag:
 
         return vectors
 
+    def semantic_search(self, query, top_k=3):
+        query_embedding = self.model.embed_query(query)
+
+        search_results = util.semantic_search(
+            torch.tensor([query_embedding]),
+            torch.tensor(self.vectors),
+            top_k=top_k,
+        )[0]
+
+        return [
+            {
+                "chunk": self.chunks[result["corpus_id"]],
+                "score": result["score"],
+            }
+            for result in search_results
+        ]
+
     def chat(self):
         while True:
             query = input(
@@ -66,6 +88,12 @@ class Rag:
             if not query:
                 print("Please enter some text.")
                 continue
+
+            results = self.semantic_search(query)
+
+            for result in results:
+                print(result["score"])
+                print(result["chunk"].page_content)
 
 
 def main():
