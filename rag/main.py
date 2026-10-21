@@ -5,6 +5,7 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+import hashlib
 
 load_dotenv()
 
@@ -26,7 +27,8 @@ class Rag:
         )
 
         self.chunks = self.splitter(self.read_pdf_file())
-        self.vectorstore.add_documents(self.chunks)
+        self.ids = self.id_generator()
+        self.vectorstore.add_documents(self.chunks, ids=self.ids)
 
     def read_pdf_file(self):
         reader = PdfReader(FILE_NAME)
@@ -47,6 +49,9 @@ class Rag:
             docs.append(doc)
 
         return docs
+
+    def id_generator(self):
+        return [hashlib.md5(chunk.page_content.encode()).hexdigest() for chunk in self.chunks]
 
     def splitter(self, docs):
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
