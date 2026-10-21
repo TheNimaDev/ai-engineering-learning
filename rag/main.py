@@ -62,6 +62,19 @@ class Rag:
         chunks = text_splitter.split_documents(docs)
         return chunks
 
+    def similarity_search(self, query, k=3):
+        result_chunks = self.vectorstore.similarity_search_with_score(
+            query, k=k)
+
+        result = []
+
+        for index, (doc, distance) in enumerate(result_chunks, 1):
+            result.append(
+                [f"Source: {index} | Page: {doc.metadata.get('page', '-1')} | Cosine distance: {distance:.4f} => {doc.page_content}"]
+            )
+
+        return result
+
     def chat(self):
         while True:
             query = input(
@@ -76,10 +89,7 @@ class Rag:
                 print("Please enter some text.")
                 continue
 
-            all_docs = self.vectorstore.get()
-
-            print(len(all_docs["documents"]))
-            print(all_docs["documents"][0])
+            result = self.similarity_search(query)
 
 
 def main():
