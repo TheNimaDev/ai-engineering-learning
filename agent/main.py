@@ -22,6 +22,7 @@ class Agent:
 
         self.agent = create_agent(
             model=self.llm_model,
+            tools=[self.get_weather],
             system_prompt=(
                 "You are a helpful conversational assistant. "
                 "Answer the given questions. "
@@ -29,6 +30,15 @@ class Agent:
                 "Provide concise and accurate answers."
             )
         )
+
+    def get_weather(self, city: str):
+        """Get the current weather for a given city."""
+        return {
+            "city": city,
+            "weather": "sunny",
+            "temperature": 22,
+            "unit": "C",
+        }
 
     def llm(self, query: str) -> str:
         self.messages.append(HumanMessage(content=query))
