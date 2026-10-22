@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import HumanMessage
+from langchain.agents import create_agent
 
 load_dotenv()
 
@@ -17,18 +18,26 @@ class Agent:
 
         self.llm_model = ChatGroq(model=self.llm_model_name, temperature=0.5)
 
-        self.messages = [
-            SystemMessage('Give short answers.')
-        ]
+        self.messages = []
 
-    def llm(self, query):
-        self.messages.append(HumanMessage(query))
+        self.agent = create_agent(
+            model=self.llm_model,
+            system_prompt=(
+                "You are a helpful conversational assistant. "
+                "Answer the given questions. "
+                "Use the provided tools whenever needed. "
+                "Provide concise and accurate answers."
+            )
+        )
 
-        result = self.llm_model.invoke(self.messages)
+    def llm(self, query: str) -> str:
+        self.messages.append(HumanMessage(content=query))
 
-        self.messages.append(result)
+        result = self.agent.invoke({"messages": self.messages})
 
-        return result.content
+        self.messages = result["messages"]
+
+        return self.messages[-1].content
 
     def chat(self):
         while True:
